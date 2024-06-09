@@ -1,49 +1,86 @@
-// This file contains the routes for handling user authentication
+const express = require("express"); // Express framework for building APIs
+const bcrypt = require("bcrypt"); // Library for hashing passwords
+const jwt = require("jsonwebtoken"); // Library for generating JSON Web Tokens
+const { body, validationResult } = require("express-validator"); // Library for validating request bodies
+const User = require("../models/User"); // Import the User model from the models directory
 
-// Importing necessary modules
-const express = require("express"); // Express framework
-const router = express.Router(); // Creating a new router instance
-const User = require("../Models/User"); // Importing the User model
+const router = express.Router(); // Create a new router instance
 
-// Importing validation middlewares
-const { validationResult, body } = require("express-validator"); // Express validation middleware
+const saltRounds = 12; // Number of salt rounds to use when hashing passwords
+const jwtSecret = process.env.JWT_SECRET; // JWT secret key for signing tokens
 
-// Creating a POST route for user registration
+// Middleware to validate request body
+const validateRequest = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  next();
+};
+
+/**
+ * Route handler for user registration.
+ *
+ * @route POST /auth/register
+ * @param {string} name - User's name
+ * @param {string} email - User's email
+ * @param {string} password - User's password
+ * @returns {Object} - JSON Web Token
+ */
 router.post(
-  "/registeruser", // Endpoint for registering a new user
-  
-  // Validating the request body
-  body("name", "Name Must be atleast 3 characters long.").isLength({ min: 3 }), // Validating name field
-  body("email", "Please Enter a valid email.").isEmail(), // Validating email field
-  body("password", "Password Must be atleast 5 characters long.").isLength({ min: 5 }), // Validating password field
-  
-  // Handling the request
-  (req, res) => {
-    
-    // Validating the request
-    const result = validationResult(req); // Validating the request body
-    if (!result.isEmpty()) { // If there are any validation errors
-      return res.status(400).json({ errors: result.array() }); // Returning the validation errors as a JSON response
-    }
+  "/register",
+  [
+    body("name", "Name must be at least 3 characters long").isLength({
+      min: 3,
+    }),
+    body("email", "Please enter a valid email").isEmail(),
+    body("password", "Password must be at least 5 characters long").isLength({
+      min: 5,
+    }),
+    validateRequest,
+  ],
+  async (req, res) => {
+    const { name, email, password } = req.body; // Destructure request body
+    const hashedPassword = await bcrypt.hash(password, saltRounds); // Hash the user's password
 
-    // Creating a new user
-    User.create(
-      {
-        name: req.body.name, // Setting the name from the request body
-        email: req.body.email, // Setting the email from the request body
-        password: req.body.password, // Setting the password from the request body
-      })
-      .then(user => res.send(user)) // If the user is created successfully, sending the user object as a response
-      .catch(err => {
-        if (err.code === 11000) { // If there is a duplicate key error (email already exists)
-          res.json({
-            message: "A user with this email already exists",
-            error: err.errmsg
-          }); // Returning a JSON response with the error message
-        }
-      });
+    const user = await User.create({ name, email, password: hashedPassword }); // Create a new user in the database
+    const authToken = jwt.sign({ id: user._id }, jwtSecret); // Generate a JSON Web Token
+    res.status(201).send(authToken); // Return the token in the response
   }
 );
 
-// Exporting the router
-module.exports = router;
+/**
+ * Route handler for user login.
+ *
+ * @route POST /auth/login
+ * @param {string} email - User's email
+ * @param {string} password - User's password
+ * @returns {Object} - JSON Web Token
+ */
+router.post(
+  "/login",
+  [
+    body("email", "Please enter a valid email").isEmail(),
+    body("password", "Please enter a password").exists(),
+    validateRequest,
+  ],
+  async (req, res) => {
+    const { email, password } = req.body; // Destructure request body
+
+    const user = await User.findOne({ email })  // Find a user with the given email
+   
+    if (!user) {
+      return res.status(400).json({ message: "Invalid email or password" }); // Return error response if no user with the given email is found
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password); // Compare the given password with the hashed password in the database
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: "Invalid email or password" }); // Return error response if the password is invalid
+    }
+
+    const authToken = jwt.sign({ id: user._id }, jwtSecret); // Generate a JSON Web Token
+    res.send(authToken); // Return the token in the response
+  }
+);
+
+module.exports = router; // Export the router instance
