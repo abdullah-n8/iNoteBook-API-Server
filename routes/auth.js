@@ -6,6 +6,7 @@ const User = require("../models/User");// Import the User model from the models 
 
 // Importing Custom MiddleWare
 const fetchUser = require('../middleware/fetchUser')
+const validateRequest = require('../middleware/validateRequest')
 
 const router = express.Router(); // Create a new router instance
 
@@ -13,13 +14,7 @@ const saltRounds = 12; // Number of salt rounds to use when hashing passwords
 const jwtSecret = process.env.JWT_SECRET; // JWT secret key for signing tokens
 
 // Middleware to validate request body
-const validateRequest = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-  next();
-};
+
 
 
 router.post(
