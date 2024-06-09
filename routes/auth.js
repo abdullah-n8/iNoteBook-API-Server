@@ -2,7 +2,10 @@ const express = require("express"); // Express framework for building APIs
 const bcrypt = require("bcrypt"); // Library for hashing passwords
 const jwt = require("jsonwebtoken"); // Library for generating JSON Web Tokens
 const { body, validationResult } = require("express-validator"); // Library for validating request bodies
-const User = require("../models/User"); // Import the User model from the models directory
+const User = require("../models/User");// Import the User model from the models directory
+
+// Importing Custom MiddleWare
+const fetchUser = require('../middleware/fetchUser')
 
 const router = express.Router(); // Create a new router instance
 
@@ -18,15 +21,7 @@ const validateRequest = (req, res, next) => {
   next();
 };
 
-/**
- * Route handler for user registration.
- *
- * @route POST /auth/register
- * @param {string} name - User's name
- * @param {string} email - User's email
- * @param {string} password - User's password
- * @returns {Object} - JSON Web Token
- */
+
 router.post(
   "/register",
   [
@@ -40,23 +35,35 @@ router.post(
     validateRequest,
   ],
   async (req, res) => {
+    
     const { name, email, password } = req.body; // Destructure request body
+    try {
     const hashedPassword = await bcrypt.hash(password, saltRounds); // Hash the user's password
 
     const user = await User.create({ name, email, password: hashedPassword }); // Create a new user in the database
-    const authToken = jwt.sign({ id: user._id }, jwtSecret); // Generate a JSON Web Token
+
+    const data = {
+        user: {
+          id: user.id
+        }
+      }
+
+    const authToken = jwt.sign(data, jwtSecret); // Generate a JSON Web Token
     res.status(201).send(authToken); // Return the token in the response
+    } catch (error) {
+        if (error.code === 11000) {
+          return res.status(400).json({
+            message: "User already exists",
+          });
+        }
+      res.status(500).json({
+        message: "Something went wrong.", error: error.message}
+    );
+    }
   }
 );
 
-/**
- * Route handler for user login.
- *
- * @route POST /auth/login
- * @param {string} email - User's email
- * @param {string} password - User's password
- * @returns {Object} - JSON Web Token
- */
+
 router.post(
   "/login",
   [
@@ -65,10 +72,12 @@ router.post(
     validateRequest,
   ],
   async (req, res) => {
+
+    try {
+
     const { email, password } = req.body; // Destructure request body
 
-    const user = await User.findOne({ email })  // Find a user with the given email
-   
+    const user = await User.findOne({email: email})  // Find a user with the given email
     if (!user) {
       return res.status(400).json({ message: "Invalid email or password" }); // Return error response if no user with the given email is found
     }
@@ -78,9 +87,31 @@ router.post(
       return res.status(400).json({ message: "Invalid email or password" }); // Return error response if the password is invalid
     }
 
-    const authToken = jwt.sign({ id: user._id }, jwtSecret); // Generate a JSON Web Token
+    const data = {
+        user: {
+          id: user.id
+        }
+      }
+
+    const authToken = jwt.sign(data, jwtSecret); // Generate a JSON Web Token
+
+
     res.send(authToken); // Return the token in the response
+    } catch (error) {
+      res.status(500).json({ message: "Something went wrong.", error: error.message});
+    }   
   }
 );
+
+router.get('/getuser', fetchUser, async (req, res)=>{
+    try {
+        let userId = req.user.id;
+        const user = await User.findById(userId).select("-password");
+        res.send(user)
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).json({ message: "Something went wrong.", error: error.message});
+    }
+})
 
 module.exports = router; // Export the router instance
