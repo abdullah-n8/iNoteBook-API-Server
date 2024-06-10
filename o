@@ -1,0 +1,42 @@
+[33mcommit f614aa78b64d39466f135a5af9f3d1d1dc55b7b0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m
+Author: Abdullah Naeem <raoabdullahn@gmail.com>
+Date:   Sun Jun 9 18:23:06 2024 +0500
+
+    Added the endpoints for get all notes of the user and adding new note
+
+[33mcommit ed87b2b78fb0d40f832a34624e5640133eaf891d[m
+Author: Abdullah Naeem <raoabdullahn@gmail.com>
+Date:   Sun Jun 9 17:46:20 2024 +0500
+
+    Created a fetch-user middleware that gets user information using auth-token
+
+[33mcommit 05591ed207870be80966bea039d06fb37fd0d59c[m
+Author: Abdullah Naeem <raoabdullahn@gmail.com>
+Date:   Sun Jun 9 16:28:53 2024 +0500
+
+    Refactored and cleaned the code in auth.js and
+    added the login endpoint
+
+[33mcommit 75bbac1a2c431ccd4b2579d8616cd597443f18b2[m
+Author: Abdullah Naeem <raoabdullahn@gmail.com>
+Date:   Sun Jun 9 13:56:17 2024 +0500
+
+    refactor and add some more checks when adding user
+
+[33mcommit dd896dca163e407fa04b085403d41a29a7d390a6[m
+Author: Abdullah Naeem <raoabdullahn@gmail.com>
+Date:   Sun Jun 9 13:31:47 2024 +0500
+
+    Add validation checks when registering a new user
+
+[33mcommit 8b0d3f3c9cb5e775d2f11a42dfdce9633868b294[m
+Author: Abdullah Naeem <raoabdullahn@gmail.com>
+Date:   Sun Jun 9 12:34:14 2024 +0500
+
+    Build Basic Structure of the iNoteBook backend API
+
+[33mcommit 6d016455babfb4ebdf08e1088597d22b539a513c[m
+Author: Abdullah Naeem <raoabdullahn@gmail.com>
+Date:   Sun Jun 9 11:22:45 2024 +0500
+
+    Initial Commit
