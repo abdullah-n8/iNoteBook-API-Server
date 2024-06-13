@@ -30,6 +30,8 @@ router.post(
     validateRequest,
   ],
   async (req, res) => {
+
+    let success = false;
     
     const { name, email, password } = req.body; // Destructure request body
     try {
@@ -44,14 +46,18 @@ router.post(
       }
 
     const authToken = jwt.sign(data, jwtSecret); // Generate a JSON Web Token
-    res.status(201).send(authToken); // Return the token in the response
+
+    success = true;
+    res.status(201).send({success, authToken}); // Return the token in the response
     } catch (error) {
         if (error.code === 11000) {
           return res.status(400).json({
+            success,
             message: "User already exists",
           });
         }
       res.status(500).json({
+        success,
         message: "Something went wrong.", error: error.message}
     );
     }
@@ -68,18 +74,21 @@ router.post(
   ],
   async (req, res) => {
 
+    let success = false
+
     try {
 
     const { email, password } = req.body; // Destructure request body
 
     const user = await User.findOne({email: email})  // Find a user with the given email
     if (!user) {
-      return res.status(400).json({ message: "Invalid email or password" }); // Return error response if no user with the given email is found
+      success = false
+      return res.status(400).json({ success: success, error: "Invalid email or password" }); // Return error response if no user with the given email is found
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password); // Compare the given password with the hashed password in the database
     if (!isPasswordValid) {
-      return res.status(400).json({ message: "Invalid email or password" }); // Return error response if the password is invalid
+      return res.status(400).json({ success: success, error: "Invalid email or password" }); // Return error response if the password is invalid
     }
 
     const data = {
@@ -88,10 +97,11 @@ router.post(
         }
       }
 
+  
     const authToken = jwt.sign(data, jwtSecret); // Generate a JSON Web Token
+    success = true;
 
-
-    res.send(authToken); // Return the token in the response
+    res.send({success, authToken}); // Return the token in the response
     } catch (error) {
       res.status(500).json({ message: "Something went wrong.", error: error.message});
     }   
